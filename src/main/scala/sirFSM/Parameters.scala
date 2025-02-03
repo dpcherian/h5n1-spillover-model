@@ -1,5 +1,9 @@
 package sirFSM
 
+import com.bharatsim.engine.distributions.LogNormal
+
+import scala.math.sqrt
+
 object Parameters {
 
   val studentAge = 18
@@ -7,7 +11,16 @@ object Parameters {
   var betaBH: Double = 5e-6
 
   var betaHH: Double = 0.3
-  final val lambda_I : Double = 1f/7
+
+  final val meanOfExposedLognormalDist : Double = 3
+  final val stdOfExposedLognormalDist : Double = 1
+
+  final val meanOfInfectedLognormalDist: Double = 7
+  final val stdOfInfectedLognormalDist: Double = 3
+
+
+  final val exposedDurationProbabilityDistribution = LogNormal(meanOfExposedLognormalDist, stdOfExposedLognormalDist)
+  final val infectedDurationProbabilityDistribution = LogNormal(meanOfInfectedLognormalDist, stdOfInfectedLognormalDist)
 
   final val numberOfTicksInADay: Int = 2
   final val dt : Double = 1f/numberOfTicksInADay
@@ -16,7 +29,7 @@ object Parameters {
   var inputPath = "./hpc/birdflupop"
   var outputPath = "./"
   var initialRecoveredFraction = 0.0
-  var initialInfectedFraction = 0.0
+  var initialExposedFraction = 0.0
 
   var Nbirds = 1_000
   var birdI = 10.0
@@ -24,7 +37,7 @@ object Parameters {
   var birdBeta = (1d/3)
   var birdGamma= (1d/7)
 
-  var saveTotalOutput = true
+  var saveTotalOutput = false
   var saveAgewiseOutput = false
   var saveInfectionInfoOutput = false
   var saveAgentOutput = true

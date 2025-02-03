@@ -12,8 +12,10 @@ case class Person(id: Long,
                   age: Int,
                   infectionState: InfectionStatus,
                   infectedOnDay: Double = -10000.0,
+                  exposedOnDay: Double = -10000.0,
                   recoveredOnDay: Double = -10000.0,
                   daysInfected: Double = 0,
+                  daysExposed: Double = 0,
                   infectingAgent: String = "",
                   infectedAt: String = "",
                   agentsInfected: Int = 0,
@@ -23,15 +25,11 @@ case class Person(id: Long,
 
   def isSusceptible: Boolean = infectionState == Susceptible
 
+  def isExposed: Boolean = infectionState == Exposed
+
   def isInfected: Boolean = infectionState == Infected
 
   def isRecovered: Boolean = infectionState == Removed
-
-  private val incrementInfectionDuration: Context => Unit = (context: Context) => {
-    if (isInfected && context.getCurrentStep % Parameters.numberOfTicksInADay == 0) {
-      updateParam("ticksInfected", daysInfected + 1)
-    }
-  }
 
   def decodeNode(classType: String, node: GraphNode): Network = {
     classType match {

@@ -3,13 +3,14 @@ package sirFSM
 import com.bharatsim.engine.Context
 import com.bharatsim.engine.graph.patternMatcher.MatchCondition._
 import com.bharatsim.engine.listeners.CSVSpecs
-import sirFSM.InfectionStatus.{Infected, Removed, Susceptible}
+import sirFSM.InfectionStatus._
 
 class SEIROutputSpec(context: Context) extends CSVSpecs {
   override def getHeaders: List[String] =
     List(
       "Time",
       "Susceptible",
+      "Exposed",
       "Infected",
       "Removed",
       "BirdFOI",
@@ -24,6 +25,7 @@ class SEIROutputSpec(context: Context) extends CSVSpecs {
     val row = List(
       context.getCurrentStep*Parameters.dt,
       graphProvider.fetchCount(label, "infectionState" equ Susceptible),
+      graphProvider.fetchCount(label, "infectionState" equ Exposed),
       graphProvider.fetchCount(label, "infectionState" equ Infected),
       graphProvider.fetchCount(label, "infectionState" equ Removed),
       Parameters.birdFOI(context.getCurrentStep*Parameters.dt, isFarm = true),

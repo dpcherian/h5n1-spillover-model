@@ -13,7 +13,7 @@ import com.bharatsim.engine.listeners.{CsvOutputGenerator, SimulationListenerReg
 import com.bharatsim.engine.models.Agent
 import com.bharatsim.engine.utils.Probability.biasedCoinToss
 import sirFSM.InfectionStatus._
-import sirFSM.diseaseStates.{InfectedState, RecoveredState, SusceptibleState}
+import sirFSM.diseaseStates._
 import com.typesafe.scalalogging.LazyLogging
 
 import java.util.Date
@@ -88,8 +88,8 @@ object Main extends LazyLogging {
             logger.info("Set total simulation duration to " + Parameters.SIMDAYS + " days")
           }
           case "IE" => {
-            Parameters.initialInfectedFraction = value.toFloat/100f;
-            logger.info("Set initial infected percentage to " + Parameters.initialInfectedFraction + "%")
+            Parameters.initialExposedFraction = value.toFloat/100f;
+            logger.info("Set initial exposed fraction to " + Parameters.initialExposedFraction)
           }
           case "CD" => {
             Parameters.culling_date = value.toFloat;
@@ -189,7 +189,7 @@ object Main extends LazyLogging {
 
     val citizenId = map("AgentID").toLong
     val age : Int = map("Age").toInt
-    val initialInfectionState = if (biasedCoinToss(Parameters.initialInfectedFraction)) "Infected" else "Susceptible"
+    val initialInfectionState = if (biasedCoinToss(Parameters.initialExposedFraction)) "Exposed" else "Susceptible"
 
     val homeId = map("HHID").toLong
     val schoolId = map("school_id").toLong
@@ -207,8 +207,8 @@ object Main extends LazyLogging {
     if(initialInfectionState == "Susceptible"){
       citizen.setInitialState(SusceptibleState())
     }
-    else if (initialInfectionState == "Infected"){
-      citizen.setInitialState(InfectedState())
+    else if (initialInfectionState == "Exposed"){
+      citizen.setInitialState(ExposedState(0.0 + Parameters.exposedDurationProbabilityDistribution.sample()))
     }
     else{
       citizen.setInitialState(RecoveredState())

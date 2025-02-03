@@ -4,25 +4,23 @@ import com.bharatsim.engine.Context
 import com.bharatsim.engine.basicConversions.decoders.DefaultDecoders._
 import com.bharatsim.engine.basicConversions.encoders.DefaultEncoders._
 import com.bharatsim.engine.fsm.State
-import com.bharatsim.engine.graph.patternMatcher.MatchCondition._
-import com.bharatsim.engine.models.{Network, StatefulAgent}
-import com.bharatsim.engine.utils.Probability.biasedCoinToss
+import com.bharatsim.engine.models.StatefulAgent
 import sirFSM.InfectionStatus._
 import sirFSM.{Parameters, Person}
 
 
-case class InfectedState(time: Double) extends State {
+case class ExposedState(time: Double) extends State {
 
   override def enterAction(context: Context, agent: StatefulAgent): Unit = {
-    agent.updateParam("infectionState", Infected)
-    agent.updateParam("infectedOnDay", context.getCurrentStep*Parameters.dt)
+    agent.updateParam("infectionState", Exposed)
+    agent.updateParam("exposedOnDay", context.getCurrentStep*Parameters.dt)
   }
 
   override def perTickAction(context: Context, agent: StatefulAgent): Unit = {
-    agent.updateParam("daysInfected", agent.asInstanceOf[Person].daysInfected + Parameters.dt)
+    agent.updateParam("daysExposed", agent.asInstanceOf[Person].daysExposed + Parameters.dt)
   }
 
-  def exitInfected(context: Context, agent: StatefulAgent): Boolean = {
+  def exitExposed(context: Context, agent: StatefulAgent): Boolean = {
     if (context.getCurrentStep * Parameters.dt >= time) {
       return true
     }
@@ -31,8 +29,8 @@ case class InfectedState(time: Double) extends State {
 
 
   addTransition(
-    when =  exitInfected,
-      to =  context => RecoveredState()
+    when =  exitExposed,
+      to =  context => InfectedState(time = context.getCurrentStep * Parameters.dt + Parameters.infectedDurationProbabilityDistribution.sample())
   )
 
 }

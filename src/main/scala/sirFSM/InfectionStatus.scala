@@ -6,7 +6,7 @@ import com.bharatsim.engine.basicConversions.encoders.BasicEncoder
 
 object InfectionStatus extends Enumeration {
   type InfectionStatus = Value
-  val Susceptible, Infected, Removed = Value
+  val Susceptible, Exposed, Infected, Removed = Value
 
   implicit val infectionStatusDecoder: BasicDecoder[InfectionStatus] = {
     case StringValue(v) => withName(v)
@@ -15,6 +15,7 @@ object InfectionStatus extends Enumeration {
 
   implicit val infectionStatusEncoder: BasicEncoder[InfectionStatus] = {
     case Susceptible => StringValue("Susceptible")
+    case Exposed => StringValue("Exposed")
     case Infected => StringValue("Infected")
     case Removed => StringValue("Removed")
   }

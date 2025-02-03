@@ -8,7 +8,7 @@ import scala.collection.mutable.ListBuffer
 
 class AgentInfoOutput(context: Context) extends CSVSpecs {
 
-  override def getHeaders: List[String] = List("AgentID", "Farmer", "InfectedOn", "RecoveredOn", "DaysInfected", "InfectingAgent", "NumberOfInfections", "InfectionState")
+  override def getHeaders: List[String] = List("AgentID", "Farmer", "ExposedOn", "InfectedOn", "RecoveredOn", "DaysExposed", "DaysInfected", "InfectingAgent", "NumberOfSecondaryInfections", "InfectionState")
 
   override def getRows(): List[List[Any]] = {
     val rows = ListBuffer.empty[List[String]]
@@ -20,7 +20,17 @@ class AgentInfoOutput(context: Context) extends CSVSpecs {
     nodes.foreach(node => {
       val person = node.as[Person]
       if(!person.isSusceptible) {
-        rows.addOne(List(person.id.toString, person.isFarmer.toString, person.infectedOnDay.toString, person.recoveredOnDay.toString, person.daysInfected.toString, person.infectingAgent.toString, person.agentsInfected.toString, person.infectionState.toString))
+        rows.addOne(List(
+          person.id.toString,
+          person.isFarmer.toString,
+          person.exposedOnDay.toString,
+          person.infectedOnDay.toString,
+          person.recoveredOnDay.toString,
+          person.daysExposed.toString,
+          person.daysInfected.toString,
+          person.infectingAgent.toString,
+          person.agentsInfected.toString,
+          person.infectionState.toString))
       }
     })
     rows.toList

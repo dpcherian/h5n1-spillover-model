@@ -56,7 +56,7 @@ case class SusceptibleState() extends State {
 
       if (agentGetsInfected) {
         agent.updateParam("infectionState", Infected)
-        agent.updateParam("infectedOnDay", context.getCurrentStep * Parameters.dt)
+        agent.updateParam("exposedOnDay", context.getCurrentStep * Parameters.dt)
         if(agentGetsInfectedByFOI){
           agent.updateParam("infectingAgent", "FOI")
         }
@@ -123,7 +123,7 @@ case class SusceptibleState() extends State {
 
   addTransition(
     when = exitSusceptible,
-      to = context => InfectedState()
+      to = context => ExposedState(time = context.getCurrentStep * Parameters.dt + Parameters.exposedDurationProbabilityDistribution.sample())
   )
 
 
