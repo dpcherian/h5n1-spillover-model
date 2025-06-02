@@ -1,4 +1,4 @@
-package sirFSM
+package model
 
 import com.bharatsim.engine.Context
 import com.bharatsim.engine.basicConversions.decoders.DefaultDecoders._
@@ -6,7 +6,7 @@ import com.bharatsim.engine.basicConversions.encoders.DefaultEncoders._
 import com.bharatsim.engine.graph.GraphNode
 import com.bharatsim.engine.models.{Agent, Network, Node, StatefulAgent}
 import com.bharatsim.engine.utils.Probability.biasedCoinToss
-import sirFSM.InfectionStatus._
+import model.InfectionStatus._
 
 case class Person(id: Long,
                   age: Int,

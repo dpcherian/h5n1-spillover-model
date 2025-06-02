@@ -1,4 +1,4 @@
-package sirFSM
+package model
 
 import java.util.SplittableRandom
 

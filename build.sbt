@@ -1,6 +1,6 @@
-name := "SIR"
+name := "h5n1-spillover-model"
 
-version := "0.1"
+version := "1"
 
 scalaVersion := "2.13.8"
 
@@ -38,6 +38,6 @@ assemblyMergeStrategy in assembly := {
   case x                             => MergeStrategy.first
 }
 
-mainClass in (Compile, run) := Some("sirFSM.Main")
+mainClass in (Compile, run) := Some("model.Main")
 
-mainClass in assembly := Some("sirFSM.Main")
+mainClass in assembly := Some("model.Main")

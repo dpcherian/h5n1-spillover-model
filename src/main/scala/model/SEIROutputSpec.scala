@@ -1,9 +1,9 @@
-package sirFSM
+package model
 
 import com.bharatsim.engine.Context
 import com.bharatsim.engine.graph.patternMatcher.MatchCondition._
 import com.bharatsim.engine.listeners.CSVSpecs
-import sirFSM.InfectionStatus._
+import model.InfectionStatus._
 
 class SEIROutputSpec(context: Context) extends CSVSpecs {
   override def getHeaders: List[String] =

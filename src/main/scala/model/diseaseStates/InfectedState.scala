@@ -1,4 +1,4 @@
-package sirFSM.diseaseStates
+package model.diseaseStates
 
 import com.bharatsim.engine.Context
 import com.bharatsim.engine.basicConversions.decoders.DefaultDecoders._
@@ -6,8 +6,8 @@ import com.bharatsim.engine.basicConversions.encoders.DefaultEncoders._
 import com.bharatsim.engine.fsm.State
 import com.bharatsim.engine.graph.patternMatcher.MatchCondition._
 import com.bharatsim.engine.models.StatefulAgent
-import sirFSM.InfectionStatus._
-import sirFSM.{Parameters, Person}
+import model.InfectionStatus._
+import model.{Parameters, Person}
 
 
 case class InfectedState(time: Double) extends State {

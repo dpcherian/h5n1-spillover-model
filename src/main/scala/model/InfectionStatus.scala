@@ -1,4 +1,4 @@
-package sirFSM
+package model
 
 import com.bharatsim.engine.basicConversions.StringValue
 import com.bharatsim.engine.basicConversions.decoders.BasicDecoder

@@ -1,4 +1,4 @@
-package sirFSM
+package model
 
 import com.bharatsim.engine.ContextBuilder._
 import com.bharatsim.engine._
@@ -15,8 +15,8 @@ import com.bharatsim.engine.intervention.{Intervention, SingleInvocationInterven
 import com.bharatsim.engine.listeners.{CsvOutputGenerator, SimulationListenerRegistry}
 import com.bharatsim.engine.models.Agent
 import com.bharatsim.engine.utils.Probability.biasedCoinToss
-import sirFSM.InfectionStatus._
-import sirFSM.diseaseStates._
+import model.InfectionStatus._
+import model.diseaseStates._
 import com.typesafe.scalalogging.LazyLogging
 
 import java.util.Date
