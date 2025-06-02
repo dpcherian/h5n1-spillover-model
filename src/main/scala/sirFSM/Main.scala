@@ -233,11 +233,11 @@ object Main extends LazyLogging {
     val initialInfectionState = if (biasedCoinToss(Parameters.initialExposedFraction)) "Exposed" else "Susceptible"
 
     val homeId = map("HHID").toLong
-    val schoolId = map("school_id").toLong
-    val officeId = map("WorkPlaceID").toLong
+    val schoolId = map("SchoolID").toLong
+    val officeId = map("WorkplaceID").toLong
 
-    val isFarm = map("isFarm").toBoolean
-    val inFarmerHH = map("inFarmerHousehold").toBoolean
+    val isFarm = map("IsFarm").toBoolean
+    val inFarmerHH = map("InFarmerHousehold").toBoolean
 
     val citizen: Person = Person(
                                 id=citizenId,

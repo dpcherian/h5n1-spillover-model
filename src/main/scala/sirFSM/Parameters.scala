@@ -26,7 +26,7 @@ object Parameters {
   final val dt : Double = 1f/numberOfTicksInADay
 
 
-  var inputPath = "./hpc/birdflupop"
+  var inputPath = "./population"
   var outputPath = "./"
   var initialRecoveredFraction = 0.0
   var initialExposedFraction = 0.0
