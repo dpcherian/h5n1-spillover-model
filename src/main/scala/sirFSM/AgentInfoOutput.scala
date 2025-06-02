@@ -8,7 +8,7 @@ import scala.collection.mutable.ListBuffer
 
 class AgentInfoOutput(context: Context) extends CSVSpecs {
 
-  override def getHeaders: List[String] = List("AgentID", "Farmer", "ExposedOn", "InfectedOn", "RecoveredOn", "DaysExposed", "DaysInfected", "InfectingAgent", "NumberOfSecondaryInfections", "InfectionState")
+  override def getHeaders: List[String] = List("AgentID", "Farmer", "ExposedOn", "InfectedOn", "RecoveredOn", "Vaccinated", "VaccinatedOn", "DaysExposed", "DaysInfected", "InfectingAgent", "InfectedAt", "NumberOfSecondaryInfections", "InfectionState")
 
   override def getRows(): List[List[Any]] = {
     val rows = ListBuffer.empty[List[String]]
@@ -26,9 +26,12 @@ class AgentInfoOutput(context: Context) extends CSVSpecs {
           person.exposedOnDay.toString,
           person.infectedOnDay.toString,
           person.recoveredOnDay.toString,
+          person.isVaccinated.toString,
+          person.vaccinatedOnDay.toString,
           person.daysExposed.toString,
           person.daysInfected.toString,
           person.infectingAgent.toString,
+          person.infectedAt.toString,
           person.agentsInfected.toString,
           person.infectionState.toString))
       }

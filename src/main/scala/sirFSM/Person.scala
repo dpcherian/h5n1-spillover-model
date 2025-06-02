@@ -20,7 +20,12 @@ case class Person(id: Long,
                   infectedAt: String = "",
                   agentsInfected: Int = 0,
                   currentLocation: String = "House",
-                  isFarmer: Boolean = false) extends StatefulAgent {
+                  isLockedDown: Boolean = false,
+                  isFarmer: Boolean = false,
+                  inFarmerHH: Boolean = false,
+                  isVaccinated: Boolean = false,
+                  vaccinatedOnDay : Double = 1000.0
+                 ) extends StatefulAgent {
 
 
   def isSusceptible: Boolean = infectionState == Susceptible

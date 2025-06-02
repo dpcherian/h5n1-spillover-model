@@ -49,14 +49,19 @@ case class SusceptibleState() extends State {
       val BHprob = Parameters.betaBH * Parameters.birdFOI(context.getCurrentStep * Parameters.dt, isFarm) * Parameters.dt
       val HHprob = Parameters.betaHH * infectedFraction * Parameters.dt
 
-      val agentGetsInfected = r < (BHprob + HHprob)
+      var relativeRisk : Double = 1.0
+
+      if(agent.asInstanceOf[Person].isVaccinated){
+        relativeRisk = 1.0 - Parameters.vaccineEfficacy
+      }
+
+      val agentGetsInfected = r < relativeRisk*(BHprob + HHprob)
 
       // Are they infected by the background FOI?
-      val agentGetsInfectedByFOI = r < BHprob
+      val agentGetsInfectedByFOI = r < relativeRisk*BHprob
 
       if (agentGetsInfected) {
-        agent.updateParam("infectionState", Infected)
-        agent.updateParam("exposedOnDay", context.getCurrentStep * Parameters.dt)
+        if(!Parameters.firstCaseRecorded) println("Agent "+agent.asInstanceOf[Person].id+ " exposed first on day "+context.getCurrentStep*Parameters.dt)
         if(agentGetsInfectedByFOI){
           agent.updateParam("infectingAgent", "FOI")
         }

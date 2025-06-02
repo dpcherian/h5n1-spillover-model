@@ -46,6 +46,9 @@ object Parameters {
 
   var culling_date=1000000.0
 
+  var lockdownFarmers : Boolean = false
+  var lockdownFarmersInfectedThreshold : Int = 10
+
   final val splittableRandom: RandomNumberGenerator = RandomNumberGenerator()
 
   var birdSArray = Array.empty[Double]
@@ -61,5 +64,23 @@ object Parameters {
       0.0
     }
   }
+
+  var totalPopulation : Int = 0;
+
+  // Vaccination parameters
+  var riskBasedVaccination : Boolean = true
+  var vaccinate : Boolean = true
+  var vaccineEfficacy : Double = 1.0
+  var dvr : Double = 1d/100
+
+  var vaccineDelayDays : Double = 7
+
+  var firstCaseRecorded : Boolean = false
+  var firstCaseRecordedDay : Double = 10000.0
+
+  var vaccinationStartedOn : Double = 0
+
+  var FOIZERODAYSET : Boolean = false
+  var FOIZERODAY : Double = 10000.0
 
 }

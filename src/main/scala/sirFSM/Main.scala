@@ -7,8 +7,11 @@ import com.bharatsim.engine.basicConversions.decoders.DefaultDecoders._
 import com.bharatsim.engine.basicConversions.encoders.DefaultEncoders._
 import com.bharatsim.engine.dsl.SyntaxHelpers._
 import com.bharatsim.engine.execution.Simulation
+import com.bharatsim.engine.graph.GraphNode
 import com.bharatsim.engine.graph.ingestion.{GraphData, Relation}
+import com.bharatsim.engine.graph.patternMatcher.EmptyPattern
 import com.bharatsim.engine.graph.patternMatcher.MatchCondition._
+import com.bharatsim.engine.intervention.{Intervention, SingleInvocationIntervention}
 import com.bharatsim.engine.listeners.{CsvOutputGenerator, SimulationListenerRegistry}
 import com.bharatsim.engine.models.Agent
 import com.bharatsim.engine.utils.Probability.biasedCoinToss
@@ -17,9 +20,13 @@ import sirFSM.diseaseStates._
 import com.typesafe.scalalogging.LazyLogging
 
 import java.util.Date
+import scala.collection.mutable.ListBuffer
+import scala.util.Random
 
 object Main extends LazyLogging {
   var currentTime: Long = 0L
+
+  var farmersLockedDownOnDay: Double = -1.0
 
   private val myTick: ScheduleUnit = new ScheduleUnit(1)
   private val myDay: ScheduleUnit = new ScheduleUnit(myTick * 2)
@@ -61,6 +68,14 @@ object Main extends LazyLogging {
             Parameters.birdBeta = value.toDouble;
             logger.info("Set bird beta to " + Parameters.birdBeta)
           }
+          case "LF" => {
+            Parameters.lockdownFarmers = value.toBoolean;
+            logger.info("Farmers will be locked down: " + Parameters.lockdownFarmers)
+          }
+          case "LFIT" => {
+            Parameters.lockdownFarmersInfectedThreshold = value.toInt;
+            logger.info("Farmers will be locked down when number of infected > " + Parameters.lockdownFarmersInfectedThreshold)
+          }
           case "FILES" => {
             val op_types = value.toCharArray
             for (op <- op_types) {
@@ -95,8 +110,23 @@ object Main extends LazyLogging {
             Parameters.culling_date = value.toFloat;
             logger.info("Set culling date day " + Parameters.culling_date)
           }
+          case "DVR" => {
+            Parameters.dvr = value.toFloat;
+            logger.info("Set daily vaccination rate to " + Parameters.dvr)
+          }
+          case "VE" => {
+            if(value.toDouble>0){
+              Parameters.vaccinate = true;
+              Parameters.vaccineEfficacy = value.toDouble
+              logger.info("Vaccinating primary and secondary contacts with a vaccine efficacy of " + Parameters.vaccineEfficacy)
+            }
+          }
+          case "VD" => {
+            Parameters.vaccineDelayDays = value.toDouble
+            logger.info("Set vaccine delay to "+Parameters.vaccineDelayDays+" days after first case.")
+          }
           case _ => {
-            throw new Exception(s"Unsupported flag: \"" + key + "\". Available flags are \"INPUT\", \"OUTPUT\", \"IR\", \"BETA\", \"FILES\", \"SIMDAYS\", \"IE\".")
+            throw new Exception(s"Unsupported flag: \"" + key + "\". Available flags are \"INPUT\", \"OUTPUT\", \"IR\", \"BETABH\", \"BETAHH\", \"BETABB\", \"LF\", \"LFIT\", \"FILES\", \"SIMDAYS\", \"IE\", \"DVR\", and \"CD\".")
           }
         }
       }
@@ -122,6 +152,8 @@ object Main extends LazyLogging {
     })
 
     simulation.defineSimulation(implicit context => {
+      Parameters.totalPopulation = context.graphProvider.fetchCount("Person", EmptyPattern())
+
       create12HourSchedules()
 
       registerAction(
@@ -136,8 +168,16 @@ object Main extends LazyLogging {
       registerAgent[Person]
 
       registerState[SusceptibleState]
+      registerState[ExposedState]
       registerState[InfectedState]
       registerState[RecoveredState]
+
+      if(Parameters.lockdownFarmers){
+        lockdown_farmers
+      }
+      if (Parameters.vaccineEfficacy > 0.0) {
+        vaccination
+      }
 
       currentTime = new Date().getTime
 
@@ -179,7 +219,7 @@ object Main extends LazyLogging {
       .add[House](0, 1)
 
     registerSchedules(
-//      (quarantinedSchedule, (agent: Agent, _: Context) => agent.asInstanceOf[Person].isInfected, 1),
+      (quarantinedSchedule, (agent: Agent, _: Context) => (agent.asInstanceOf[Person].inFarmerHH && context.activeInterventionNames.contains("lockdown_farmers")), 1),
       (employeeSchedule, (agent: Agent, _: Context) => agent.asInstanceOf[Person].age >= Parameters.studentAge, 2),
       (studentSchedule, (agent: Agent, _: Context) => agent.asInstanceOf[Person].age < Parameters.studentAge, 3)
     )
@@ -196,12 +236,14 @@ object Main extends LazyLogging {
     val officeId = map("WorkPlaceID").toLong
 
     val isFarm = map("isFarm").toBoolean
+    val inFarmerHH = map("inFarmerHousehold").toBoolean
 
     val citizen: Person = Person(
                                 id=citizenId,
                                 age=age,
                                 infectionState = InfectionStatus.withName(initialInfectionState),
-                                isFarmer=isFarm
+                                isFarmer=isFarm,
+                                inFarmerHH=inFarmerHH
                               )
 
     if(initialInfectionState == "Susceptible"){
@@ -273,6 +315,140 @@ object Main extends LazyLogging {
   }
 
 
+  private def lockdown_farmers(implicit context: Context): Unit = {
+
+    var ActivatedAt: Double = -1.0
+    val interventionName = "lockdown_farmers"
+    val activationCondition = (context: Context) => {
+      val result = getSymptomaticCount(context) >= Parameters.lockdownFarmersInfectedThreshold
+      if (result) {
+        farmersLockedDownOnDay = context.getCurrentStep * Parameters.dt
+        logger.info("Farm locked down on day " + farmersLockedDownOnDay)
+      }
+      result
+    }
+    val firstTimeExecution = (context: Context) => {
+      ActivatedAt = context.getCurrentStep * Parameters.dt
+    }
+    val DeactivationCondition = (context: Context) => {
+      false
+    }
+
+    val intervention = SingleInvocationIntervention(interventionName, activationCondition, DeactivationCondition, firstTimeExecution)
+
+    registerIntervention(intervention)
+  }
+
+  private def vaccination(implicit context: Context): Unit = {
+
+    var ActivatedAt = 0
+    val interventionName = "vaccination"
+    val activationCondition = (context: Context) => {
+      val conditionMet = (Parameters.firstCaseRecorded) &&
+                          ((context.getCurrentStep*Parameters.dt - Parameters.firstCaseRecordedDay) >= Parameters.vaccineDelayDays)
+      if (conditionMet) {
+        Parameters.vaccinationStartedOn = context.getCurrentStep * Parameters.dt
+        logger.info("Vaccination started on day " + Parameters.vaccinationStartedOn +", and first case recorded on day "+ Parameters.firstCaseRecordedDay)
+      }
+      conditionMet
+    }
+
+    val firstTimeExecution = (context: Context) => {
+      ActivatedAt = context.getCurrentStep
+    }
+    val deActivationCondition = (context: Context) => {
+      false
+    }
+
+    val perTickAction = (context: Context) => {
+
+      if (context.getCurrentStep % Parameters.numberOfTicksInADay == 0) {
+
+        val allCandidatesIterator: Iterator[GraphNode] = context.graphProvider.fetchNodes("Person", ((("isFarmer" equ true) or ("inFarmerHH" equ true)) and ("isVaccinated" equ false)))
+
+        var vaccinesAdministeredToday = 0
+        val nshots = (Parameters.dvr * Parameters.totalPopulation).toInt
+
+        val agentsToVaccinate = ListBuffer[Person]()
+
+        if (Parameters.riskBasedVaccination) {
+          var hrList = ListBuffer[Person]()
+          var mrList = ListBuffer[Person]()
+          var lrList = ListBuffer[Person]()
+
+          allCandidatesIterator.foreach(node => {
+            val person = node.as[Person]
+
+            if (person.isFarmer) {
+              hrList += person
+            }
+            else if (person.inFarmerHH) {
+              mrList += person
+            }
+            else {
+              lrList += person
+            }
+          })
+
+          if (agentsToVaccinate.length <= nshots) {
+            hrList = Random.shuffle(hrList)
+            hrList.foreach(person => {
+              if (!person.isVaccinated && vaccinesAdministeredToday < nshots) {
+                agentsToVaccinate += person
+                vaccinesAdministeredToday += 1
+              }
+            })
+          }
+
+          if (agentsToVaccinate.length <= nshots) {
+            mrList = Random.shuffle(mrList)
+            mrList.foreach(person => {
+              if (!person.isVaccinated && vaccinesAdministeredToday < nshots) {
+                agentsToVaccinate += person
+                vaccinesAdministeredToday += 1
+              }
+            })
+          }
+
+          if (agentsToVaccinate.length <= nshots) {
+            lrList = Random.shuffle(lrList)
+            lrList.foreach(person => {
+              if (!person.isVaccinated && vaccinesAdministeredToday < nshots) {
+                agentsToVaccinate += person
+                vaccinesAdministeredToday += 1
+              }
+            })
+          }
+//          logger.info("Unvaccinated agents remaining: (HR={}, MR={}, LR={}). Vaccines administered today: {}", hrList.length, mrList.length, lrList.length, vaccinesAdministeredToday)
+        }
+        else {
+          var allCandidatesList = allCandidatesIterator.toList
+          allCandidatesList = Random.shuffle(allCandidatesList)
+          val potentialAgentsToVaccinate = allCandidatesList.take(nshots)
+
+          potentialAgentsToVaccinate.foreach(node => {
+            val person = node.as[Person]
+            agentsToVaccinate += person
+            vaccinesAdministeredToday += 1
+          })
+
+//          logger.info("Unvaccinated MSM remaining: {}. Vaccines administered today: {}", allCandidatesList.length, vaccinesAdministeredToday)
+        }
+
+
+        agentsToVaccinate.foreach(person => {
+          person.updateParam("isVaccinated", true)
+          person.updateParam("vaccinatedOnDay", context.getCurrentStep * Parameters.dt)
+        })
+
+      }
+    }
+
+    val intervention: Intervention = SingleInvocationIntervention(interventionName, activationCondition, deActivationCondition, firstTimeExecution, perTickAction)
+
+    registerIntervention(intervention)
+  }
+
 
 
 
@@ -291,8 +467,12 @@ object Main extends LazyLogging {
     context.graphProvider.fetchCount("Person", "infectionState" equ Susceptible)
   }
 
-  private def getInfectedCount(context: Context): Int = {
+  private def getSymptomaticCount(context: Context): Int = {
     context.graphProvider.fetchCount("Person", ("infectionState" equ Infected))
+  }
+
+  private def getInfectedCount(context: Context): Int = {
+    context.graphProvider.fetchCount("Person", ("infectionState" equ Infected) or  ("infectionState" equ Exposed))
   }
 
   private def getRemovedCount(context: Context) = {
