@@ -61,7 +61,6 @@ case class SusceptibleState() extends State {
       val agentGetsInfectedByFOI = r < relativeRisk*BHprob
 
       if (agentGetsInfected) {
-        if(!Parameters.firstCaseRecorded) println("Agent "+agent.asInstanceOf[Person].id+ " exposed first on day "+context.getCurrentStep*Parameters.dt)
         if(agentGetsInfectedByFOI){
           agent.updateParam("infectingAgent", "FOI")
         }

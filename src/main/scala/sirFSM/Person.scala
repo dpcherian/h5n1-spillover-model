@@ -65,7 +65,6 @@ case class Person(id: Long,
     }
   }
 
-  addBehaviour(incrementInfectionDuration)
   addBehaviour(updateCurrentLocation)
 
   addRelation[House]("STAYS_AT")
