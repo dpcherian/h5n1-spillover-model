@@ -159,7 +159,8 @@ object Main extends LazyLogging {
       registerAction(
         StopSimulation,
         (c: Context) => {
-          context.getCurrentStep * Parameters.dt >= Parameters.SIMDAYS
+          (context.getCurrentStep * Parameters.dt >= Parameters.FOIZERODAY && getInfectedCount(context)==0) ||
+            (context.getCurrentStep * Parameters.dt >= Parameters.SIMDAYS)
         }
       )
 
@@ -306,6 +307,11 @@ object Main extends LazyLogging {
       birdS_array( (t/Parameters.dt).toInt ) = S;
       birdI_array( (t/Parameters.dt).toInt ) = I;
       birdR_array( (t/Parameters.dt).toInt ) = R;
+
+      if(!Parameters.FOIZERODAYSET && I < 0.01){
+        Parameters.FOIZERODAY = t
+        Parameters.FOIZERODAYSET = true
+      }
 
 
       t += Parameters.dt
